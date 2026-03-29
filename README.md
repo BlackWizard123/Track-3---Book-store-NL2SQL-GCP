@@ -56,23 +56,9 @@ Cloud-run URL : https://bookstore-api-1059652519537.us-central1.run.app/
 ---
 ### Architecture Flow
 
-```
-User Question (plain English)
-        ↓
-FastAPI /query endpoint
-        ↓
-Gemini 1.5 Flash  ←── Schema context injected
-  generates SQL
-        ↓
-AlloyDB PostgreSQL
-  executes SQL → returns rows
-        ↓
-Gemini 1.5 Flash
-  converts rows → friendly answer
-        ↓
-Chat UI — shows answer + SQL + results table
-```
+<img width="773" height="1013" alt="bookstore-flow drawio" src="https://github.com/user-attachments/assets/d8ae280a-5afd-413d-b7fc-8f7bd37e8d11" />
 
+---
 **Step by step:**
 
 1. **User asks a question** — types in plain English, e.g. *"Which book has the highest rating?"*
