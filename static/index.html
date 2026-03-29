@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bookstore AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1208;
+    --parchment: #f5f0e8;
+    --cream: #faf7f2;
+    --amber: #c8860a;
+    --amber-light: #e8a020;
+    --amber-dim: rgba(200,134,10,0.12);
+    --sienna: #8b3a0f;
+    --sage: #5c6b4a;
+    --dust: #d4c9b0;
+    --shadow: rgba(26,18,8,0.12);
+    --chat-w: 720px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* Texture overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Header */
+  header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    background: var(--ink);
+    padding: 0 2rem;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 2px solid var(--amber);
+  }
+
+  .logo {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+
+  .logo-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    color: var(--parchment);
+    letter-spacing: 0.02em;
+  }
+
+  .logo-sub {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--amber);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+  .status-pill {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--dust);
+    letter-spacing: 0.08em;
+  }
+
+  .status-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: #4a9a5c;
+    box-shadow: 0 0 6px #4a9a5c;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  .status-dot.offline { background: #c0392b; box-shadow: 0 0 6px #c0392b; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  /* Main layout */
+  main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 64px;
+    padding-bottom: 120px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Welcome screen */
+  .welcome {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 184px);
+    text-align: center;
+    padding: 2rem;
+    animation: fadeUp 0.6s ease both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .welcome-icon {
+    font-size: 3.5rem;
+    margin-bottom: 1.5rem;
+    filter: drop-shadow(0 4px 12px var(--shadow));
+  }
+
+  .welcome h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 5vw, 3rem);
+    color: var(--ink);
+    line-height: 1.2;
+    margin-bottom: 0.75rem;
+  }
+
+  .welcome h1 em {
+    color: var(--amber);
+    font-style: italic;
+  }
+
+  .welcome p {
+    color: #6b5d4a;
+    font-size: 1rem;
+    font-weight: 300;
+    max-width: 420px;
+    line-height: 1.7;
+    margin-bottom: 2.5rem;
+  }
+
+  .suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    justify-content: center;
+    max-width: 600px;
+  }
+
+  .suggestion-chip {
+    background: white;
+    border: 1.5px solid var(--dust);
+    border-radius: 100px;
+    padding: 0.55rem 1.1rem;
+    font-size: 0.82rem;
+    color: #5a4a35;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 400;
+  }
+
+  .suggestion-chip:hover {
+    border-color: var(--amber);
+    color: var(--amber);
+    background: var(--amber-dim);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px var(--shadow);
+  }
+
+  /* Chat messages */
+  .chat-container {
+    width: 100%;
+    max-width: var(--chat-w);
+    padding: 2rem 1.5rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .message {
+    display: flex;
+    gap: 1rem;
+    animation: fadeUp 0.35s ease both;
+  }
+
+  .message.user {
+    flex-direction: row-reverse;
+  }
+
+  .avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .avatar.ai {
+    background: var(--ink);
+    color: var(--amber);
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 0.9rem;
+  }
+
+  .avatar.user-av {
+    background: var(--amber);
+    color: white;
+    font-size: 0.85rem;
+  }
+
+  .bubble-wrap {
+    max-width: calc(100% - 52px);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .message.user .bubble-wrap {
+    align-items: flex-end;
+  }
+
+  .bubble {
+    padding: 0.9rem 1.2rem;
+    border-radius: 18px;
+    line-height: 1.65;
+    font-size: 0.92rem;
+  }
+
+  .bubble.ai-bubble {
+    background: white;
+    border: 1.5px solid var(--dust);
+    border-top-left-radius: 4px;
+    box-shadow: 0 2px 8px var(--shadow);
+    color: var(--ink);
+  }
+
+  .bubble.user-bubble {
+    background: var(--ink);
+    color: var(--parchment);
+    border-top-right-radius: 4px;
+  }
+
+  /* SQL card */
+  .sql-card {
+    background: #1e1810;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #3a2e1e;
+    margin-top: 0.25rem;
+  }
+
+  .sql-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.9rem;
+    background: #2a2010;
+    border-bottom: 1px solid #3a2e1e;
+  }
+
+  .sql-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--amber);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .copy-btn {
+    background: none;
+    border: none;
+    color: #8a7a5a;
+    cursor: pointer;
+    font-size: 0.7rem;
+    font-family: 'DM Mono', monospace;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    transition: color 0.2s;
+  }
+
+  .copy-btn:hover { color: var(--amber); }
+
+  .sql-code {
+    padding: 0.8rem 0.9rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    color: #d4b896;
+    white-space: pre-wrap;
+    word-break: break-all;
+    line-height: 1.6;
+  }
+
+  /* Results table */
+  .results-card {
+    margin-top: 0.5rem;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1.5px solid var(--dust);
+    background: white;
+  }
+
+  .results-header {
+    padding: 0.5rem 0.9rem;
+    background: var(--parchment);
+    border-bottom: 1px solid var(--dust);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: #8a7a5a;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .results-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+  }
+
+  .results-table th {
+    background: var(--parchment);
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    color: #7a6a52;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--dust);
+    font-weight: 500;
+  }
+
+  .results-table td {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #f0ebe0;
+    color: var(--ink);
+    font-weight: 300;
+  }
+
+  .results-table tr:last-child td { border-bottom: none; }
+  .results-table tr:hover td { background: #fdf9f3; }
+
+  .no-results {
+    padding: 1rem;
+    text-align: center;
+    color: #9a8a72;
+    font-size: 0.82rem;
+    font-style: italic;
+  }
+
+  /* Typing indicator */
+  .typing {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.9rem 1.2rem;
+    background: white;
+    border: 1.5px solid var(--dust);
+    border-radius: 18px;
+    border-top-left-radius: 4px;
+    width: fit-content;
+    box-shadow: 0 2px 8px var(--shadow);
+  }
+
+  .typing span {
+    width: 7px; height: 7px;
+    background: var(--dust);
+    border-radius: 50%;
+    animation: bounce 1.2s ease-in-out infinite;
+  }
+
+  .typing span:nth-child(2) { animation-delay: 0.15s; }
+  .typing span:nth-child(3) { animation-delay: 0.3s; }
+
+  @keyframes bounce {
+    0%, 60%, 100% { transform: translateY(0); background: var(--dust); }
+    30% { transform: translateY(-6px); background: var(--amber); }
+  }
+
+  /* Error bubble */
+  .error-bubble {
+    background: #fff5f5;
+    border: 1.5px solid #f5c6c6;
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    font-size: 0.82rem;
+    color: #8b2020;
+    font-family: 'DM Mono', monospace;
+    line-height: 1.5;
+  }
+
+  /* Input bar */
+  .input-bar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 100;
+    background: rgba(250,247,242,0.95);
+    backdrop-filter: blur(12px);
+    border-top: 1.5px solid var(--dust);
+    padding: 1rem;
+    display: flex;
+    justify-content: center;
+  }
+
+  .input-wrap {
+    width: 100%;
+    max-width: var(--chat-w);
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-end;
+    background: white;
+    border: 2px solid var(--dust);
+    border-radius: 16px;
+    padding: 0.75rem 0.75rem 0.75rem 1.2rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    box-shadow: 0 4px 20px var(--shadow);
+  }
+
+  .input-wrap:focus-within {
+    border-color: var(--amber);
+    box-shadow: 0 4px 20px rgba(200,134,10,0.15);
+  }
+
+  textarea {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.92rem;
+    color: var(--ink);
+    resize: none;
+    max-height: 120px;
+    line-height: 1.5;
+    min-height: 24px;
+  }
+
+  textarea::placeholder { color: #b0a090; }
+
+  .send-btn {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    background: var(--ink);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+    color: var(--amber);
+  }
+
+  .send-btn:hover:not(:disabled) {
+    background: var(--amber);
+    color: white;
+    transform: scale(1.05);
+  }
+
+  .send-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .send-btn svg { width: 18px; height: 18px; }
+
+  /* Divider */
+  .date-divider {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: #b0a080;
+    font-size: 0.7rem;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.1em;
+  }
+
+  .date-divider::before, .date-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--dust);
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--dust); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #b8a888; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <span class="logo-text">📚 Bookstore</span>
+    <span class="logo-sub">AI Assistant</span>
+  </div>
+  <div class="status-pill">
+    <div class="status-dot" id="statusDot"></div>
+    <span id="statusText">Checking...</span>
+  </div>
+</header>
+
+<main id="main">
+  <div class="welcome" id="welcome">
+    <div class="welcome-icon">📖</div>
+    <h1>Ask anything about<br>our <em>bookstore</em></h1>
+    <p>Powered by Gemma AI + AlloyDB. Ask in plain English — I'll find the answer from the database.</p>
+    <div class="suggestions">
+      <div class="suggestion-chip" onclick="sendSuggestion(this)">Which book has the highest rating?</div>
+      <div class="suggestion-chip" onclick="sendSuggestion(this)">Show me all finance books</div>
+      <div class="suggestion-chip" onclick="sendSuggestion(this)">Which author is from Brazil?</div>
+      <div class="suggestion-chip" onclick="sendSuggestion(this)">Books under ₹400</div>
+      <div class="suggestion-chip" onclick="sendSuggestion(this)">How many books are in stock?</div>
+      <div class="suggestion-chip" onclick="sendSuggestion(this)">Show all books with their authors</div>
+      <div class="suggestion-chip" onclick="sendSuggestion(this)">What orders have been placed?</div>
+      <div class="suggestion-chip" onclick="sendSuggestion(this)">Most expensive book?</div>
+    </div>
+  </div>
+
+  <div class="chat-container" id="chatContainer" style="display:none;"></div>
+</main>
+
+<div class="input-bar">
+  <div class="input-wrap">
+    <textarea
+      id="questionInput"
+      placeholder="Ask about books, authors, orders..."
+      rows="1"
+      onkeydown="handleKey(event)"
+      oninput="autoResize(this)"
+    ></textarea>
+    <button class="send-btn" id="sendBtn" onclick="sendQuestion()" title="Send">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13"></line>
+        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<script>
+  const API = '';
+  let isLoading = false;
+
+  // Check health on load
+  async function checkHealth() {
+    try {
+      const res = await fetch(`${API}/health`);
+      const data = await res.json();
+      const dot = document.getElementById('statusDot');
+      const txt = document.getElementById('statusText');
+      if (data.status === 'healthy') {
+        dot.className = 'status-dot';
+        txt.textContent = `Connected · ${data.books_count} books`;
+      } else {
+        dot.className = 'status-dot offline';
+        txt.textContent = 'DB Offline';
+      }
+    } catch {
+      document.getElementById('statusDot').className = 'status-dot offline';
+      document.getElementById('statusText').textContent = 'API Offline';
+    }
+  }
+
+  function autoResize(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+  }
+
+  function handleKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendQuestion();
+    }
+  }
+
+  function sendSuggestion(el) {
+    document.getElementById('questionInput').value = el.textContent;
+    sendQuestion();
+  }
+
+  function showChat() {
+    document.getElementById('welcome').style.display = 'none';
+    document.getElementById('chatContainer').style.display = 'flex';
+  }
+
+  function addMessage(role, content) {
+    showChat();
+    const container = document.getElementById('chatContainer');
+    const msg = document.createElement('div');
+    msg.className = `message ${role}`;
+
+    if (role === 'user') {
+      msg.innerHTML = `
+        <div class="avatar user-av">👤</div>
+        <div class="bubble-wrap">
+          <div class="bubble user-bubble">${escapeHtml(content)}</div>
+        </div>`;
+    } else {
+      msg.innerHTML = `
+        <div class="avatar ai">B</div>
+        <div class="bubble-wrap" id="aiBubble-${Date.now()}">${content}</div>`;
+    }
+
+    container.appendChild(msg);
+    msg.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    return msg;
+  }
+
+  function addTyping() {
+    showChat();
+    const container = document.getElementById('chatContainer');
+    const msg = document.createElement('div');
+    msg.className = 'message';
+    msg.id = 'typingMsg';
+    msg.innerHTML = `
+      <div class="avatar ai">B</div>
+      <div class="bubble-wrap">
+        <div class="typing"><span></span><span></span><span></span></div>
+      </div>`;
+    container.appendChild(msg);
+    msg.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }
+
+  function removeTyping() {
+    const t = document.getElementById('typingMsg');
+    if (t) t.remove();
+  }
+
+  function buildResultsTable(results) {
+    if (!results || results.length === 0) {
+      return `<div class="results-card"><div class="no-results">No results found</div></div>`;
+    }
+    const keys = Object.keys(results[0]);
+    const rows = results.map(r =>
+      `<tr>${keys.map(k => `<td>${r[k] ?? '—'}</td>`).join('')}</tr>`
+    ).join('');
+    return `
+      <div class="results-card">
+        <div class="results-header">📊 ${results.length} result${results.length !== 1 ? 's' : ''}</div>
+        <table class="results-table">
+          <thead><tr>${keys.map(k => `<th>${k}</th>`).join('')}</tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+  }
+
+  function buildAIResponse(data) {
+    const sqlCard = `
+      <div class="sql-card">
+        <div class="sql-card-header">
+          <span class="sql-label">⚡ Generated SQL</span>
+          <button class="copy-btn" onclick="copySQL(this, \`${escapeAttr(data.sql)}\`)">copy</button>
+        </div>
+        <div class="sql-code">${escapeHtml(data.sql)}</div>
+      </div>`;
+    const table = buildResultsTable(data.results);
+    const answer = `<div class="bubble ai-bubble">${escapeHtml(data.answer)}</div>`;
+    return answer + sqlCard + table;
+  }
+
+  function copySQL(btn, sql) {
+    navigator.clipboard.writeText(sql).then(() => {
+      btn.textContent = 'copied!';
+      setTimeout(() => btn.textContent = 'copy', 2000);
+    });
+  }
+
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function escapeAttr(str) {
+    return String(str).replace(/`/g, '\\`').replace(/\$/g, '\\$');
+  }
+
+  async function sendQuestion() {
+    const input = document.getElementById('questionInput');
+    const question = input.value.trim();
+    if (!question || isLoading) return;
+
+    isLoading = true;
+    document.getElementById('sendBtn').disabled = true;
+    input.value = '';
+    input.style.height = 'auto';
+
+    addMessage('user', question);
+    addTyping();
+
+    try {
+      const res = await fetch(`${API}/query`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question })
+      });
+
+      const data = await res.json();
+      removeTyping();
+
+      if (!res.ok) {
+        addMessage('ai', `<div class="error-bubble">⚠️ ${escapeHtml(data.detail || 'Something went wrong')}</div>`);
+      } else {
+        addMessage('ai', buildAIResponse(data));
+      }
+    } catch (err) {
+      removeTyping();
+      addMessage('ai', `<div class="error-bubble">⚠️ Network error: ${escapeHtml(err.message)}</div>`);
+    } finally {
+      isLoading = false;
+      document.getElementById('sendBtn').disabled = false;
+      input.focus();
+    }
+  }
+
+  // Init
+  checkHealth();
+  document.getElementById('questionInput').focus();
+</script>
+</body>
+</html>
