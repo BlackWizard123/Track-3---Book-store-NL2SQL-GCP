@@ -1,8 +1,8 @@
 <img width="2133" height="752" alt="heroDesktopBgV2" src="https://github.com/user-attachments/assets/ba158d0f-79a3-4ad2-bfa9-97720b89cbe8" />
 
 # Track 3 - Build and Migrate faster with AI-Ready Databases
-# 📒 Bookstore AI
-#### A conversational AI assistant that lets anyone query a live bookstore database using plain English. Powered by **Gemini AI** for natural language understanding and **AlloyDB PostgreSQL** for data storage, it converts user questions into SQL, executes them, and returns friendly human-readable answers — all through a clean chat interface deployed on **Google Cloud Run**.
+# 📒 Bookstore AI - NL2SQL AI Assistant
+A conversational AI assistant that lets anyone query a live bookstore database using plain English. Powered by **Gemini AI** for natural language understanding and **AlloyDB PostgreSQL** for data storage, it converts user questions into SQL, executes them, and returns friendly human-readable answers — all through a clean chat interface deployed on **Google Cloud Run**.
 
 ![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)
