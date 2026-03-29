@@ -4,8 +4,8 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import psycopg2
 import psycopg2.extras
-import vertexai
-from vertexai.generative_models import GenerativeModel
+# import vertexai
+# from vertexai.generative_models import GenerativeModel
 import os
 from dotenv import load_dotenv
 import re
@@ -16,8 +16,8 @@ load_dotenv()
 # Configure Gemini
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 # model = genai.GenerativeModel("gemma-3-12B")
-# model = genai.GenerativeModel("gemma-3-12b-it")
-model = genai.GenerativeModel("gemini-2.5-flash")
+model = genai.GenerativeModel("gemma-3-12b-it")
+# model = genai.GenerativeModel("gemini-2.5-flash")
 
 # Database connection
 def get_db_connection():
