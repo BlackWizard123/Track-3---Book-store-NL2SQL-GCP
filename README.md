@@ -12,7 +12,7 @@ A conversational AI assistant that lets anyone query a live bookstore database u
 ![Gemini AI](https://img.shields.io/badge/Gemini_AI-1.5_Flash-8E75B2?style=for-the-badge&logo=google&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 
-### Demo video link : https://www.youtube.com/watch?v=iKU3fvNT9TM 
+### Demo video link : https://www.youtube.com/watch?v=zyZZrFhhA20
 
 ---
 
